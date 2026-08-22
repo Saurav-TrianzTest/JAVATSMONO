@@ -1,0 +1,85 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# buildspec-image-gate.yml
+#
+# AWS CodeBuild buildspec – ECS Fargate CI/CD Image Size Gate
+# Rule: cz-ts-1003  (Frontend TypeScript Declaration Files in Container)
+#
+# Purpose:
+#   Integrates an automated image-size gate in AWS CodePipeline / CodeBuild
+#   that fails the deployment if TypeScript declaration files (.d.ts) are
+#   detected inside the ECS Fargate container image, preventing regressions.
+#
+# Usage:
+#   Add this buildspec as a separate CodeBuild project (e.g. "image-gate")
+#   in your CodePipeline AFTER the Docker build/push stage and BEFORE the
+#   ECS deploy stage.  Set the environment variable IMAGE_URI to the full
+#   ECR image URI (including tag) that was pushed in the previous stage.
+# ─────────────────────────────────────────────────────────────────────────────
+
+version: 0.2
+
+env:
+  variables:
+    # Override these in the CodeBuild project / pipeline action environment
+    IMAGE_URI: ""          # e.g. 123456789012.dkr.ecr.us-east-1.amazonaws.com/storefront:latest
+    AWS_DEFAULT_REGION: "us-east-1"
+    ECR_REGISTRY: ""       # e.g. 123456789012.dkr.ecr.us-east-1.amazonaws.com
+
+phases:
+  pre_build:
+    commands:
+      - echo "=== Image Size Gate – cz-ts-1003 (.d.ts declaration file check) ==="
+      - echo "Target image: $IMAGE_URI"
+
+      # Authenticate to Amazon ECR
+      - |
+        if [ -n "$ECR_REGISTRY" ]; then
+          aws ecr get-login-password --region "$AWS_DEFAULT_REGION" \
+            | docker login --username AWS --password-stdin "$ECR_REGISTRY"
+        fi
+
+  build:
+    commands:
+      # ── 1. Pull the image that was just built and pushed ──────────────────
+      - echo "Pulling image for inspection..."
+      - docker pull "$IMAGE_URI"
+
+      # ── 2. Scan for .d.ts files inside the image filesystem ───────────────
+      - echo "Scanning image for TypeScript declaration files (.d.ts)..."
+      - |
+        DTS_FILES=$(docker run --rm --entrypoint sh "$IMAGE_URI" \
+          -c "find / -name '*.d.ts' 2>/dev/null" || true)
+
+      # ── 3. Gate: fail the build if any .d.ts files are found ──────────────
+      - |
+        if [ -n "$DTS_FILES" ]; then
+          echo "──────────────────────────────────────────────────────────────"
+          echo "GATE FAILED – TypeScript declaration files detected in image!"
+          echo "Rule: cz-ts-1003 (Frontend TypeScript Declaration Files in Container)"
+          echo "Files found:"
+          echo "$DTS_FILES"
+          echo ""
+          echo "Remediation: Ensure .dockerignore contains '**/*.d.ts' and"
+          echo "that the Dockerfile does NOT copy ts-frontend/ into the"
+          echo "runtime stage.  Re-build and re-push the image, then re-run"
+          echo "this gate."
+          echo "──────────────────────────────────────────────────────────────"
+          exit 1
+        else
+          echo "GATE PASSED – No .d.ts declaration files found in image."
+        fi
+
+      # ── 4. (Optional) Image size report ───────────────────────────────────
+      - echo "Image size report:"
+      - docker image inspect "$IMAGE_URI" --format '{{.Size}}' | awk '{printf "Image size: %.2f MB\n", $1/1024/1024}'
+
+  post_build:
+    commands:
+      - echo "Image gate completed successfully."
+
+reports: {}
+
+artifacts:
+  files:
+    - "**/*"
+  discard-paths: no

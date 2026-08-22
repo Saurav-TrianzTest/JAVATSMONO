@@ -1,0 +1,78 @@
+# =============================================================================
+# .dockerignore – storefront-backend
+# Excludes build artifacts, wrapper scripts, TypeScript sources, and other
+# files not needed in the Docker build context.
+# =============================================================================
+
+# Maven build output
+target/
+
+# Maven wrapper (NEVER used in Docker – system mvn is used instead)
+mvnw
+mvnw.cmd
+.mvn/
+
+# Gradle wrapper (not applicable but excluded for safety)
+gradlew
+gradlew.bat
+gradle/wrapper/
+
+# Exclude ALL TypeScript declaration files from every directory
+**/*.d.ts
+
+# Exclude TypeScript source files (only compiled JAR is needed at runtime)
+**/*.ts
+**/*.tsx
+
+# Exclude TypeScript config (not needed in runtime image)
+tsconfig.json
+tsconfig*.json
+
+# Exclude frontend source directory entirely from the runtime stage
+ts-frontend/
+
+# Exclude Node.js artifacts
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Exclude test and coverage artifacts
+**/__tests__/
+**/*.test.ts
+**/*.spec.ts
+coverage/
+.nyc_output/
+
+# Exclude build/CI configuration files
+.github/
+.circleci/
+buildspec*.yml
+codebuild*.yml
+
+# Exclude version-control metadata
+.git/
+.gitignore
+.gitattributes
+
+# Exclude IDE / editor files
+.vscode/
+.idea/
+*.iml
+*.swp
+*.swo
+
+# Exclude documentation
+README.md
+CHANGELOG.md
+docs/
+
+# Exclude OS artifacts
+.DS_Store
+Thumbs.db
+
+# Exclude Docker files themselves (not needed in build context)
+docker-compose.yml
+docker-compose*.yml
+scripts/
+ecs/

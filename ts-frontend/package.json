@@ -1,0 +1,17 @@
+{
+  "name": "storefront-ts-frontend",
+  "version": "1.0.0",
+  "description": "TypeScript frontend for the storefront application with runtime input validation",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "@types/node": "^20.12.7"
+  }
+}

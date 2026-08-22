@@ -1,0 +1,34 @@
+{
+  "serviceName": "storefront-backend-service",
+  "cluster": "{{CLUSTER_NAME}}",
+  "taskDefinition": "storefront-backend-task",
+  "desiredCount": 2,
+  "launchType": "FARGATE",
+  "networkConfiguration": {
+    "awsvpcConfiguration": {
+      "subnets": ["{{SUBNET_1}}", "{{SUBNET_2}}"],
+      "securityGroups": ["{{SECURITY_GROUP}}"],
+      "assignPublicIp": "ENABLED"
+    }
+  },
+  "deploymentConfiguration": {
+    "maximumPercent": 200,
+    "minimumHealthyPercent": 50
+  },
+  "enableECSManagedTags": true,
+  "propagateTags": "SERVICE",
+  "tags": [
+    {
+      "key": "Environment",
+      "value": "production"
+    },
+    {
+      "key": "Application",
+      "value": "storefront-backend"
+    },
+    {
+      "key": "ManagedBy",
+      "value": "ecs"
+    }
+  ]
+}
