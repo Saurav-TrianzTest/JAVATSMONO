@@ -1,0 +1,85 @@
+version: 0.2
+
+# AWS CodeBuild buildspec for ECS Fargate deployment
+# Includes image-size gate to prevent .d.ts regression (Rule: cz-ts-1003)
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_TAG=${COMMIT_HASH:=latest}
+      
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Building the Docker image...
+      - docker build -t $REPOSITORY_URI:latest -f Dockerfile.validation-sidecar .
+      - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
+      
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      
+      # IMAGE SIZE GATE - Rule cz-ts-1003: Prevent .d.ts files in container
+      - echo "Checking for TypeScript declaration files in container image..."
+      - |
+        # Create temporary container to inspect contents
+        CONTAINER_ID=$(docker create $REPOSITORY_URI:$IMAGE_TAG)
+        
+        # Check for .d.ts files in the container
+        DTS_FILES=$(docker export $CONTAINER_ID | tar -t | grep '\.d\.ts$' || true)
+        
+        # Clean up temporary container
+        docker rm $CONTAINER_ID
+        
+        # Fail build if .d.ts files are found
+        if [ ! -z "$DTS_FILES" ]; then
+          echo "ERROR: TypeScript declaration files (.d.ts) found in container image!"
+          echo "This violates containerization rule cz-ts-1003"
+          echo "Files found:"
+          echo "$DTS_FILES"
+          echo ""
+          echo "These files bloat the image size and are not needed at runtime."
+          echo "Update .dockerignore and tsconfig.prod.json to exclude them."
+          exit 1
+        fi
+        
+        echo "✓ No .d.ts files found in container image"
+      
+      # IMAGE SIZE CHECK
+      - |
+        IMAGE_SIZE=$(docker image inspect $REPOSITORY_URI:$IMAGE_TAG --format='{{.Size}}')
+        IMAGE_SIZE_MB=$((IMAGE_SIZE / 1024 / 1024))
+        echo "Container image size: ${IMAGE_SIZE_MB}MB"
+        
+        # Set threshold (adjust based on your requirements)
+        MAX_SIZE_MB=500
+        
+        if [ $IMAGE_SIZE_MB -gt $MAX_SIZE_MB ]; then
+          echo "WARNING: Image size (${IMAGE_SIZE_MB}MB) exceeds threshold (${MAX_SIZE_MB}MB)"
+          echo "Consider optimizing the image further"
+        else
+          echo "✓ Image size is within acceptable limits"
+        fi
+      
+      - echo Pushing the Docker images...
+      - docker push $REPOSITORY_URI:latest
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
+      
+      - echo Writing image definitions file...
+      - printf '[{"name":"%s","imageUri":"%s"}]' $CONTAINER_NAME $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+      
+      - echo "Build and validation complete!"
+
+artifacts:
+  files:
+    - imagedefinitions.json
+    - ecs-task-definition.json
+
+cache:
+  paths:
+    - '/root/.m2/**/*'
+    - 'ts-frontend/node_modules/**/*'

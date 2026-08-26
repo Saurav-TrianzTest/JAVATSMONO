@@ -1,0 +1,72 @@
+version: 0.2
+
+# AWS CodeBuild buildspec for Spring Boot Backend
+# Builds and deploys Java backend to ECS Fargate
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/storefront-backend
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_TAG=${COMMIT_HASH:=latest}
+      
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Building the Docker image for Spring Boot backend...
+      - docker build -t $REPOSITORY_URI:latest -f Dockerfile .
+      - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
+      
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      
+      # Health check validation
+      - echo "Validating health check endpoint..."
+      - |
+        # Start container temporarily to test health check
+        CONTAINER_ID=$(docker run -d -p 8080:8080 $REPOSITORY_URI:$IMAGE_TAG)
+        
+        # Wait for application to start
+        echo "Waiting for application to start..."
+        sleep 30
+        
+        # Test health check endpoint
+        HEALTH_STATUS=$(docker exec $CONTAINER_ID curl -s http://localhost:8080/actuator/health | grep -o '"status":"UP"' || true)
+        
+        # Stop and remove test container
+        docker stop $CONTAINER_ID
+        docker rm $CONTAINER_ID
+        
+        if [ -z "$HEALTH_STATUS" ]; then
+          echo "ERROR: Health check endpoint not responding correctly"
+          exit 1
+        fi
+        
+        echo "✓ Health check endpoint validated successfully"
+      
+      # Image size check
+      - |
+        IMAGE_SIZE=$(docker image inspect $REPOSITORY_URI:$IMAGE_TAG --format='{{.Size}}')
+        IMAGE_SIZE_MB=$((IMAGE_SIZE / 1024 / 1024))
+        echo "Container image size: ${IMAGE_SIZE_MB}MB"
+      
+      - echo Pushing the Docker images...
+      - docker push $REPOSITORY_URI:latest
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
+      
+      - echo Writing image definitions file...
+      - printf '[{"name":"main-app","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+      
+      - echo "Build and validation complete!"
+
+artifacts:
+  files:
+    - imagedefinitions.json
+    - ecs-task-definition.json
+
+cache:
+  paths:
+    - '/root/.m2/**/*'

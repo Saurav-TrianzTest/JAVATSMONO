@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  storefront-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: storefront-backend:latest
+    container_name: storefront-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - JAVA_OPTS=-Xmx512m -Xms256m -XX:+UseContainerSupport
+      - SERVER_PORT=8080
+      # External service connections (configure as needed)
+      - DATABASE_URL=${DATABASE_URL:-jdbc:postgresql://host.docker.internal:5432/storefront}
+      - DATABASE_USERNAME=${DATABASE_USERNAME:-postgres}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-postgres}
+      - REDIS_HOST=${REDIS_HOST:-host.docker.internal}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+    volumes:
+      - ./logs:/app/logs
+      - ./config:/app/config
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "java", "-cp", "app.jar", "org.springframework.boot.actuate.health.HealthEndpoint"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  logs:
+  config:

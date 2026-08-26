@@ -1,0 +1,129 @@
+{
+  "family": "storefront-app-with-validation-sidecar",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "validation-sidecar",
+      "image": "ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/storefront-validation-sidecar:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8080,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "MAIN_APP_HOST",
+          "value": "localhost"
+        },
+        {
+          "name": "MAIN_APP_PORT",
+          "value": "3000"
+        },
+        {
+          "name": "SIDECAR_PORT",
+          "value": "8080"
+        },
+        {
+          "name": "VALIDATION_MODE",
+          "value": "strict"
+        },
+        {
+          "name": "LOG_LEVEL",
+          "value": "info"
+        }
+      ],
+      "healthCheck": {
+        "command": [
+          "CMD-SHELL",
+          "curl -f http://localhost:8080/health || exit 1"
+        ],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 60
+      },
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/storefront-validation-sidecar",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "validation-sidecar"
+        }
+      },
+      "dependsOn": [
+        {
+          "containerName": "main-app",
+          "condition": "HEALTHY"
+        }
+      ]
+    },
+    {
+      "name": "main-app",
+      "image": "ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/storefront-main-app:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 3000,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "NODE_ENV",
+          "value": "production"
+        },
+        {
+          "name": "PORT",
+          "value": "3000"
+        },
+        {
+          "name": "API_URL",
+          "value": "http://localhost:8080"
+        },
+        {
+          "name": "AWS_REGION",
+          "value": "us-east-1"
+        },
+        {
+          "name": "SSM_API_CONTRACT_PARAMETER",
+          "value": "/storefront/api-contract"
+        },
+        {
+          "name": "API_CONTRACT_VERSION",
+          "value": "1.0.0"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "DB_PASSWORD",
+          "valueFrom": "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:storefront/db-password"
+        }
+      ],
+      "healthCheck": {
+        "command": [
+          "CMD-SHELL",
+          "curl -f http://localhost:3000/api/health || exit 1"
+        ],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 60
+      },
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/storefront-main-app",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "main-app"
+        }
+      }
+    }
+  ]
+}

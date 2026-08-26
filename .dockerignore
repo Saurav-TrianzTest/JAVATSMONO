@@ -1,0 +1,88 @@
+# Maven build artifacts
+target/
+!target/*.jar
+
+# Maven wrapper (CRITICAL: Never use wrapper in Docker)
+mvnw
+mvnw.cmd
+.mvn/
+
+# Gradle wrapper (CRITICAL: Never use wrapper in Docker)
+gradlew
+gradlew.bat
+gradle/wrapper/
+
+# Git files
+.git/
+.gitignore
+.gitattributes
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+
+# Documentation
+*.md
+README*
+CHANGELOG*
+LICENSE*
+docs/
+
+# Test files
+src/test/
+
+# Build configuration
+buildspec.yml
+buildspec-backend.yml
+
+# Docker files (don't copy into image)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# CI/CD files
+.github/
+.gitlab-ci.yml
+Jenkinsfile
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Node modules (if any frontend assets)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# TypeScript files
+ts-frontend/
+**/*.d.ts
+**/*.ts
+!**/*.java
+
+# Environment files
+.env
+.env.*
+*.env
+
+# ECS and deployment files
+ecs/
+scripts/

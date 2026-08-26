@@ -1,0 +1,23 @@
+{
+  "name": "storefront-ts-frontend",
+  "version": "1.0.0",
+  "description": "TypeScript frontend with containerization-ready API validation using io-ts for ECS Fargate validation sidecar",
+  "type": "module",
+  "scripts": {
+    "validate-contract": "node -e \"import('./api.js').then(m => m.validateApiContractAtStartup())\"",
+    "validate-startup": "node --loader ts-node/esm startup-validation.ts",
+    "build": "tsc",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "io-ts": "^2.2.20",
+    "fp-ts": "^2.16.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
