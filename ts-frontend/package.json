@@ -1,0 +1,17 @@
+{
+  "name": "ts-frontend",
+  "version": "1.0.0",
+  "description": "TypeScript frontend with io-ts runtime type validation (cz-ts-1015)",
+  "private": true,
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "fp-ts": "^2.16.9",
+    "io-ts": "^2.2.21"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}

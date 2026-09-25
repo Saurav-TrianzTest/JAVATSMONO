@@ -1,0 +1,55 @@
+# =============================================================================
+# .dockerignore – storefront-backend
+# Excludes build artefacts, wrapper scripts, IDE files, and TypeScript
+# declaration files from the Docker build context.
+# =============================================================================
+
+# ── Maven wrapper (NEVER used in Docker – system mvn is used instead) ─────────
+mvnw
+mvnw.cmd
+.mvn/
+
+# ── TypeScript declaration files (cz-ts-1003) ────────────────────────────────
+# Exclude ALL .d.ts declaration files recursively from the build context.
+# These are compile-time artefacts only; the runtime image needs compiled
+# JavaScript (.js) exclusively.
+**/*.d.ts
+**/*.d.ts.map
+
+# ── TypeScript source maps (optional – keep if source-map support is needed) ──
+# Uncomment the line below to also strip source maps from the runtime image.
+# **/*.js.map
+
+# ── TypeScript source files (not needed in runtime image) ────────────────────
+ts-frontend/**/*.ts
+ts-frontend/**/*.tsx
+# Re-include compiled output directory so the frontend-build stage can copy it
+!ts-frontend/dist/**
+
+# ── Node artefacts ────────────────────────────────────────────────────────────
+ts-frontend/node_modules/
+node_modules/
+
+# ── Build / IDE artefacts ─────────────────────────────────────────────────────
+**/.DS_Store
+**/.idea/
+**/.vscode/
+**/target/
+**/dist/
+# Re-include the frontend dist so the runtime stage can serve static assets
+!ts-frontend/dist/
+
+# ── Git metadata ──────────────────────────────────────────────────────────────
+.git/
+.gitignore
+
+# ── Test artefacts ────────────────────────────────────────────────────────────
+src/test/
+
+# ── Documentation ─────────────────────────────────────────────────────────────
+*.md
+README*
+
+# ── Misc ──────────────────────────────────────────────────────────────────────
+*.iml
+*.log

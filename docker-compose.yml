@@ -1,0 +1,43 @@
+version: "3.9"
+
+# =============================================================================
+# docker-compose.yml – storefront-backend (Spring Boot 3.2.5 / Java 17)
+# Application-only service. External services (databases, caches, queues)
+# are provided separately via environment variables.
+# =============================================================================
+
+services:
+  storefront-backend:
+    image: storefront-backend:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: storefront-backend
+    ports:
+      - "8080:8080"
+    environment:
+      # JVM tuning – container-aware settings
+      JAVA_OPTS: "-Xmx512m -Xms256m -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
+      # Spring Boot profile
+      SPRING_PROFILES_ACTIVE: docker
+      # Application settings
+      SPRING_APPLICATION_NAME: storefront-backend
+      SERVER_PORT: "8080"
+      # Timezone
+      TZ: UTC
+    volumes:
+      - ./logs:/app/logs
+      - ./config:/app/config
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+networks:
+  app-network:
+    driver: bridge
