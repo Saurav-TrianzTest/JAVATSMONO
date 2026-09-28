@@ -1,0 +1,52 @@
+version: "3.9"
+
+# =============================================================================
+# docker-compose.yml — storefront-backend (local development / smoke-test)
+# Contains ONLY the application service.
+# External services (databases, caches, queues) are provided separately.
+# =============================================================================
+
+services:
+  storefront-backend:
+    image: storefront-backend:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: storefront-backend
+    ports:
+      - "8080:8080"
+    environment:
+      # Spring profile
+      SPRING_PROFILES_ACTIVE: docker
+      # Server configuration
+      SERVER_PORT: "8080"
+      # JVM tuning
+      JAVA_OPTS: >-
+        -XX:+UseContainerSupport
+        -XX:MaxRAMPercentage=75.0
+        -Xms256m
+        -Djava.security.egd=file:/dev/./urandom
+        -Dfile.encoding=UTF-8
+        -Duser.timezone=UTC
+      # Timezone
+      TZ: UTC
+      # External service connections — override with actual values at runtime
+      # DATABASE_URL: jdbc:postgresql://db-host:5432/storefront
+      # DATABASE_USERNAME: storefront
+      # DATABASE_PASSWORD: changeme
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      # Uses the custom /api/health endpoint exposed by HealthController
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

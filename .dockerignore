@@ -1,0 +1,62 @@
+# =============================================================================
+# .dockerignore — storefront-backend
+# Excludes build artefacts, wrapper scripts, IDE files, and test resources
+# from the Docker build context to keep images lean and reproducible.
+# =============================================================================
+
+# ── Maven build output ────────────────────────────────────────────────────────
+target/
+*.class
+
+# ── Maven wrapper (MUST be excluded — Dockerfile uses system mvn) ─────────────
+mvnw
+mvnw.cmd
+.mvn/
+
+# ── Gradle wrapper (excluded for safety) ─────────────────────────────────────
+gradlew
+gradlew.bat
+gradle/wrapper/
+.gradle/
+
+# ── Git metadata ──────────────────────────────────────────────────────────────
+.git/
+.gitignore
+.gitattributes
+
+# ── IDE / editor metadata ─────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+
+# ── Documentation ─────────────────────────────────────────────────────────────
+README.md
+CHANGELOG.md
+docs/
+
+# ── CI/CD configuration ───────────────────────────────────────────────────────
+.github/
+.gitlab-ci.yml
+Jenkinsfile
+
+# ── OS artefacts ─────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── TypeScript / Node.js frontend (not part of Java backend image) ────────────
+ts-frontend/
+node_modules/
+**/*.d.ts
+**/*.js.map
+**/*.ts.map
+
+# ── Test files ────────────────────────────────────────────────────────────────
+src/test/
+**/*.test.ts
+**/*.spec.ts
+
+# ── Deployment scripts (not needed inside image) ──────────────────────────────
+scripts/
+ecs/

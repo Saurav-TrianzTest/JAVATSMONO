@@ -1,0 +1,27 @@
+{
+  "name": "ts-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TypeScript frontend for storefront application",
+  "scripts": {
+    "build": "tsc",
+    "dev": "next dev",
+    "start": "next start"
+  },
+  "dependencies": {
+    "next": "^14.0.0",
+    "@reduxjs/toolkit": "^2.2.5",
+    "react-redux": "^9.1.2",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "superjson": "^2.2.1",
+    "zod": "^3.22.4",
+    "io-ts": "^2.2.21",
+    "fp-ts": "^2.16.9"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "typescript": "^5.0.0"
+  }
+}
